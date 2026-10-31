@@ -1,0 +1,25 @@
+# Cartografía provincial v21 — fuentes, producción y límites
+
+## Fuente y derechos
+
+- **Datos vectoriales reales:** archivo Shortbread 1.0 MBTiles de la Comunitat Valenciana publicado por [Geofabrik](https://download.geofabrik.de/europe/spain/valencia.html), `valencia-shortbread-1.0.mbtiles`. Origen descargado: `https://download.geofabrik.de/europe/spain/valencia-shortbread-1.0.mbtiles`; SHA-256 `3C8661AA15657C0231BB11784D79AE09448E961A5252D964602BC0F1930335F7`. Sus metadatos declaran autoría OpenStreetMap contributors / Geofabrik y licencia Open Database License 1.0. No se empleó el servidor público de teselas OSM.
+- **Límites para dividir archivos y ordenar el catálogo:** [geoBoundaries gbOpen, España ADM1/ADM2](https://www.geoboundaries.org/api.html), publicado como CC BY 4.0 para uso con atribución. Los dos GeoJSON descargados están en `maps/source/` y sus SHA-256 son `B61A1BF661B90883763F633F5E9DBC27E7356309E42CBE56B60D2CEAB5112F63` (ADM1) y `40A12D32651A352B59BC88447432421AB80E2D950DEB6F552EFBAE907F7232C2` (ADM2). El fichero de metadatos original documenta como fuente el Instituto Nacional de Estadística.
+- [OpenStreetMap permite el uso comercial](https://www.openstreetmap.org/copyright) de sus datos bajo ODbL, con atribución y obligaciones de compartir las bases derivadas bajo la misma licencia. Las APK y el código de interfaz no quedan por ello sometidos automáticamente a ODbL; los PMTiles derivados sí se distribuyen como datos ODbL. La app muestra atribución en el mapa e información; los paquetes separados conservan metadatos de autoría y licencia. Revisar la presentación final de atribución y obligaciones legales antes de comercializar.
+
+## Producción
+
+`tools/build_provincial_maps.py` lee las teselas MVT originales, asigna cada tesela entera a la provincia cuya geometría ocupa la mayor parte y escribe tres PMTiles v3. Nunca altera ni crea entidades, sendas, topónimos o relieve. Las teselas de cada paquete son disjuntas; el motor puede mostrar las tres fuentes a la vez sin duplicar líneas en la frontera. `tools/build_province_catalog.py` genera un catálogo local de 19 comunidades/ciudades y 52 provincias/ciudades; solo Castellón, Valencia y Alicante tienen archivo preparado. Las demás figuran **pendientes**. El catálogo no tiene URL ni descargas funcionales.
+
+Los paquetes se entregan fuera de la APK en `releases/maps/`; `manifest.json` contiene tamaño y SHA-256 de cada archivo. La importación usa el gestor PMTiles existente, con copia local, comprobación de formato, integridad y espacio. La coincidencia del SHA-256 con el catálogo identifica la provincia instalada; los PMTiles externos siguen importándose y gestionándose por separado. Las provincias instaladas se incorporan simultáneamente al estilo MapLibre y se visualizan al desplazar el mapa, sin consultas de red ni cambiar el registro GPS. Tavernes continúa incluido como alternativa cuando falta Valencia.
+
+## Evidencia y límites
+
+- `tests/provincial_maps_verify.py` abrió los tres archivos PMTiles, leyó sus metadatos Shortbread y decodificó teselas reales: Segorbe aparece en Castellón; las capitales aparecen en Valencia y Alicante. Comprobó 243 teselas que cruzan límites provinciales a zoom 12–14, sin teselas ausentes ni duplicadas **entre los archivos generados**.
+- Los límites administrativos no coinciden con la cuadrícula de teselas. Con una sola provincia instalada, puede verse una franja próxima al límite dentro del paquete vecino. Con las tres instaladas, la unión de teselas conserva continuidad según la comprobación automatizada. La calidad visual y el paso de provincia en MapLibre **requieren prueba en Android físico**.
+- El paquete vectorial alcanza zoom 14 y se amplía visualmente hasta el máximo actual de la app; no hay datos nuevos por encima. Contiene calles, sendas y topónimos según la cobertura OSM, con posibles omisiones propias de la fuente.
+- **Relieve y curvas de nivel:** los archivos provinciales Shortbread no contienen estas capas. Senderos funciona con la cartografía vectorial. Topográfico y Combinado conservan sus estilos de color, pero el relieve y las curvas solo aparecen donde existen los archivos incluidos de Tavernes. No se generan ni simulan para Segorbe o el resto de provincias.
+- `MapPackageStore` comprueba encabezado, esquema y SHA-256. Los mapas importados y sus identificadores persisten en almacenamiento privado. La app no incluye una fuente remota, no solicita permiso de Internet y no empaqueta estos archivos provinciales dentro de la APK.
+
+## Evolución posterior: Release `maps-v0.1.0`
+
+El texto anterior describe v21. La descarga directa posterior utiliza los **mismos tres archivos OSM**, más los seis complementos reales descritos en [relieve-provincial.md](relieve-provincial.md). `releases/maps/catalog-maps-v0.1.0.json` fija tamaños, hashes, cobertura, versión y URLs de GitHub Releases. Se incluye en la APK; el usuario debe publicar la Release antes de que las URLs respondan. Ningún archivo vectorial original se regeneró ni se incluyó en la APK.
